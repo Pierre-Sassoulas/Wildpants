@@ -7,6 +7,9 @@ local ADDON, Addon = ...
 local Search = LibStub('LibItemSearch-1.2')
 local Sort = Addon:NewModule('Sorting', 'MutexDelay-1.0')
 
+iterateCall = 0
+actualMove = 0
+
 Sort.Proprieties = {
   'class', 'subclass', 'equip',
   'quality',
@@ -26,12 +29,16 @@ function Sort:Start(owner, bags, event)
   self.owner, self.bags, self.event = owner, bags, event
   self:RegisterEvent('PLAYER_REGEN_DISABLED', 'Stop')
   self:SendSignal('SORTING_STATUS', owner, bags)
+  iterateCall = 0
+  actualMove = 0
   self:Run()
 end
 
 function Sort:Run()
   if self:CanRun() then
     ClearCursor()
+    print("Call to iterate")
+    iterateCall = iterateCall + 1
     self:Iterate()
   else
     self:Stop()
@@ -57,6 +64,7 @@ function Sort:Iterate()
         local other = from.item
 
         if item.id == other.id and stackable(other) then
+          print(format("Stacking %s from bag %s slot %s to bag %s slot %s", item.link, from.bag, from.slot, target.bag, target.slot))
           todo = not self:Move(from, target) or todo
         end
       end
@@ -85,6 +93,8 @@ function Sort:Iterate()
         if best_goal ~= goal and best_item.space ~= goal then
           item = best_item
         end
+        print(format("Iter:%s Move:%s Moving %s from bag %s slot %s to bag %s slot %s (%s)", iterateCall, actualMove, item.link, item.space.bag, item.space.slot, goal.bag, goal.slot, max_distance))
+
         todo = not self:Move(item.space, goal) or todo
       else
         item.placed = true
@@ -189,6 +199,7 @@ function Sort:Move(from, to)
     return
   end
 
+  actualMove = actualMove + 1
   Addon:PickupItem(self.owner, from.bag, from.slot)
   Addon:PickupItem(self.owner, to.bag, to.slot)
 
